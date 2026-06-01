@@ -181,7 +181,7 @@ class SalesOutstockReportBuilder:
     h1 {{ font-size:26px; margin:0 0 8px; letter-spacing:0; }}
     h2 {{ font-size:18px; margin:0 0 14px; color:var(--head); }}
     h3 {{ font-size:15px; margin:18px 0 10px; color:var(--head); }}
-    .meta {{ display:flex; flex-wrap:wrap; gap:20px; font-size:13px; opacity:.92; }}
+    .meta {{ display:flex; flex-wrap:wrap; gap:10px; font-size:13px; opacity:.92; }}
     .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin:16px 0; }}
     .kpi,.section {{ background:var(--card); border:1px solid var(--line); border-radius:8px; }}
     .kpi {{ padding:15px; border-left:4px solid var(--cyan); }}
@@ -251,7 +251,7 @@ const s = d.summary || {};
 
 app.append(el('header', {},
   el('h1', {}, '销售出库分析报告'),
-  el('div', {class:'meta'}, `组织：${d.organization || ''}`, `期间：${d.period || ''}`, `生成时间：${new Date().toLocaleString('zh-CN')}`)
+  el('div', {class:'meta'}, `组织：${d.organization || '自动识别组织'}；期间：${d.period || ''}；生成时间：${new Date().toLocaleString('zh-CN')}`)
 ));
 
 app.append(el('div', {class:'grid'},

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 
-TEXT_COLUMNS = {"期间", "单据日期", "单据编号", "业务类型", "单据类型", "物料编码", "物料名称", "物料分组", "仓库"}
+TEXT_COLUMNS = {"期间", "单据日期", "单据编号", "业务类型", "单据类型", "物料编码", "物料名称", "物料分组", "仓库", "库存组织", "核算组织", "组织"}
 
 
 class InventoryAnalyzer:
@@ -29,7 +29,7 @@ class InventoryAnalyzer:
         total_forecast = self._calc_total_forecast(monthly_trend)
 
         self.result = {
-            "organization": org_name,
+            "organization": self._organization_label(org_name),
             "period": period_str,
             "forecast_months": self.forecast_months,
             "monthly_trend": monthly_trend,
@@ -63,6 +63,18 @@ class InventoryAnalyzer:
                 continue
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
         return df
+
+    def _organization_label(self, fallback: str) -> str:
+        candidates = []
+        for df in (self.summary_df, self.detail_df):
+            if df is None or df.empty:
+                continue
+            for col in ("库存组织", "核算组织", "组织"):
+                if col in df.columns:
+                    candidates.extend(str(x).strip() for x in df[col].dropna().unique().tolist() if str(x).strip())
+        if candidates:
+            return "、".join(sorted(set(candidates)))
+        return fallback or "自动识别组织"
 
     def _calc_monthly_trend(self) -> dict:
         if self.detail_df is not None and not self.detail_df.empty and "期间" in self.detail_df.columns:

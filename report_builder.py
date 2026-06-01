@@ -161,7 +161,7 @@ class ReportBuilder:
             f"未来3个月预测 {i.get('forecast_total', 0):,.0f}, 趋势 {i.get('trend', '')}"
             for i in top_items
         )
-        return f"""### 库存分析摘要（{d.get("period", "")}）
+        return f"""### 存货收发存分析摘要（{d.get("period", "")}）
 
 组织：{d.get("organization", "")}
 
@@ -305,7 +305,7 @@ class ReportBuilder:
         data = dict(self.data)
         data["detail_excel"] = Path(excel_path).name if excel_path else ""
         data_json = json.dumps(data, ensure_ascii=False)
-        title = f"库存分析报告 - {self.data.get('organization', '')}"
+        title = f"存货收发存分析报告 - {self.data.get('organization', '')}"
         return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -326,7 +326,7 @@ class ReportBuilder:
     h1 {{ font-size:26px; margin:0 0 8px; letter-spacing:0; }}
     h2 {{ font-size:18px; margin:0 0 14px; color:var(--head); }}
     h3 {{ font-size:15px; margin:18px 0 10px; color:var(--head); }}
-    .meta {{ display:flex; flex-wrap:wrap; gap:20px; font-size:13px; opacity:.92; }}
+    .meta {{ display:flex; flex-wrap:wrap; gap:10px; font-size:13px; opacity:.92; }}
     .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin:16px 0; }}
     .kpi,.section {{ background:var(--card); border:1px solid var(--line); border-radius:8px; }}
     .kpi {{ padding:15px; border-left:4px solid var(--cyan); }}
@@ -404,8 +404,8 @@ const p = s.procurement_summary || {};
 const forecastMonths = resolveForecastMonths();
 
 app.append(el('header', {},
-  el('h1', {}, '库存收发存分析报告'),
-  el('div', {class:'meta'}, `组织：${d.organization || ''}`, `期间：${d.period || ''}`, `生成时间：${new Date().toLocaleString('zh-CN')}`)
+  el('h1', {}, '存货收发存分析报告'),
+  el('div', {class:'meta'}, `组织：${d.organization || '自动识别组织'}；期间：${d.period || ''}；生成时间：${new Date().toLocaleString('zh-CN')}`)
 ));
 
 app.append(el('div', {class:'grid'},
