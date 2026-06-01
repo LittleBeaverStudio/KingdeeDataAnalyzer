@@ -40,7 +40,7 @@ class SalesOutstockAnalyzer:
     def analyze(self, org_name: str = "未知组织", period_str: str = "") -> dict:
         detail = self.df.copy()
         self.result = {
-            "organization": org_name,
+            "organization": self._organization_label(org_name),
             "period": period_str,
             "summary": self._summary(detail),
             "monthly_trend": self._monthly_trend(detail),
@@ -269,6 +269,16 @@ class SalesOutstockAnalyzer:
             "单据类型、销售员、物料、客户维度默认按未结算金额绝对值和应收金额降序，便于同时识别待结算和超结算/退货影响。",
             "是否赠品来自金蝶原始字段，赠品行仍纳入数量统计；金额与应收金额以金蝶报表实际返回值为准。",
         ]
+
+    def _organization_label(self, fallback: str) -> str:
+        orgs = [
+            str(x).strip()
+            for x in self.df.get("sale_org", pd.Series(dtype=str)).dropna().unique().tolist()
+            if str(x).strip()
+        ]
+        if orgs:
+            return "、".join(sorted(orgs))
+        return fallback or "自动识别组织"
 
     def _numeric_fields(self) -> set[str]:
         return {

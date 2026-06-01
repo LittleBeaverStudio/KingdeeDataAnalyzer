@@ -115,6 +115,8 @@ python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01 --org 101
 
 多个组织或 `all` 是否可用，取决于 `KingdeeDataExporter` 当前配置和金蝶权限。
 
+当导出结果包含多个组织时，采购订单分析和销售出库分析会从源数据中的采购组织/销售组织字段汇总有数据的组织名称，并显示在报告头部。
+
 ## 从已有 Excel 生成报告
 
 如果数据已经通过 `KingdeeDataExporter` 导出，可以跳过接口调用：
@@ -165,3 +167,15 @@ KingdeeDataAnalyzer/
   sales_outstock_analyzer.py
   sales_outstock_report_builder.py
 ```
+
+## 发布建议
+
+发布到 GitHub 时建议提交源码、`README.md`、`SKILL.md`、`requirements.txt`。
+
+不建议提交：
+
+- `outputs*/`
+- `__pycache__/`
+- 本地生成的 Excel / HTML / JSON 报告
+
+这些都属于运行产物，用户安装后可自行生成。

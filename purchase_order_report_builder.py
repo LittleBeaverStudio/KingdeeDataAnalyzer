@@ -274,7 +274,7 @@ function monthlySection() {
   const data = d.monthly_trend || [];
   app.append(section('一、月度采购执行趋势',
     comboChart(data),
-    el('div', {class:'chart-caption'}, '柱形为应付金额，折线为未结算金额；右侧轴对应未结算金额。')
+    el('div', {class:'chart-caption'}, '每月一组重叠柱：底层为应付金额，前景为未结算金额，使用同一金额坐标轴。')
   ));
 }
 
@@ -312,16 +312,17 @@ function methodSection() {
 
 function comboChart(data) {
   const width = 1120, height = 360;
-  const margin = {left:72, right:86, top:28, bottom:58};
+  const margin = {left:86, right:32, top:30, bottom:58};
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
-  const maxPay = Math.max(...data.map(x => x.payable_amount || 0), 1);
-  const maxUnsettled = Math.max(...data.map(x => x.unsettled_amount || 0), 1);
+  const values = data.flatMap(x => [x.payable_amount || 0, x.unsettled_amount || 0]);
+  const maxValue = Math.max(...values.map(v => Math.abs(v)), 1);
   const step = plotW / Math.max(data.length, 1);
-  const barW = Math.max(12, step * 0.48);
+  const baseBarW = Math.max(18, step * 0.48);
+  const overlayBarW = Math.max(10, step * 0.24);
   const x = i => margin.left + step * i + step / 2;
-  const yPay = v => margin.top + plotH - (v / maxPay) * plotH;
-  const yUn = v => margin.top + plotH - (v / maxUnsettled) * plotH;
+  const zeroY = margin.top + plotH;
+  const yVal = v => zeroY - (v / maxValue) * plotH * 0.92;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.setAttribute('class', 'combo-chart');
@@ -335,23 +336,28 @@ function comboChart(data) {
   for (let i=0; i<=4; i++) {
     const y = margin.top + plotH * i / 4;
     add('line', {x1:margin.left, y1:y, x2:width-margin.right, y2:y, stroke:'#e4eaf1'});
-    add('text', {x:margin.left-10, y:y+4, 'text-anchor':'end', 'font-size':'11', fill:'#5f6368'}, fmt(maxPay*(1-i/4)/10000,1)+'万');
-    add('text', {x:width-margin.right+10, y:y+4, 'text-anchor':'start', 'font-size':'11', fill:'#5f6368'}, fmt(maxUnsettled*(1-i/4)/10000,1)+'万');
+    add('text', {x:margin.left-10, y:y+4, 'text-anchor':'end', 'font-size':'11', fill:'#5f6368'}, fmt(maxValue*(1-i/4)/10000,1)+'万');
   }
   data.forEach((d,i) => {
     const cx = x(i);
-    add('rect', {x:cx-barW/2, y:yPay(d.payable_amount), width:barW, height:margin.top+plotH-yPay(d.payable_amount), fill:'#1f5f99', rx:3});
+    drawBar(cx - baseBarW / 2, d.payable_amount || 0, baseBarW, '#8fb8dd', false);
+    drawBar(cx - overlayBarW / 2, d.unsettled_amount || 0, overlayBarW, '#b06000', true);
     add('text', {x:cx, y:height-32, 'text-anchor':'middle', 'font-size':'10', fill:'#5f6368'}, d.month);
   });
-  const points = data.map((d,i) => `${x(i)},${yUn(d.unsettled_amount)}`).join(' ');
-  add('polyline', {points, fill:'none', stroke:'#b06000', 'stroke-width':3});
-  data.forEach((d,i) => {
-    add('circle', {cx:x(i), cy:yUn(d.unsettled_amount), r:4, fill:'#b06000'});
-    add('text', {x:x(i), y:yUn(d.unsettled_amount)-8, 'text-anchor':'middle', 'font-size':'10', fill:'#9a5b00'}, fmt(d.unsettled_amount/10000,1)+'万');
-  });
-  add('line', {x1:margin.left, y1:margin.top+plotH, x2:width-margin.right, y2:margin.top+plotH, stroke:'#8aa0b5'});
-  add('text', {x:margin.left, y:18, 'font-size':'12', fill:'#1f5f99'}, '应付金额');
-  add('text', {x:width-margin.right, y:18, 'text-anchor':'end', 'font-size':'12', fill:'#b06000'}, '未结算金额');
+  add('line', {x1:margin.left, y1:zeroY, x2:width-margin.right, y2:zeroY, stroke:'#8aa0b5'});
+  add('rect', {x:margin.left, y:12, width:12, height:8, fill:'#8fb8dd'});
+  add('text', {x:margin.left+18, y:20, 'font-size':'12', fill:'#263746'}, '应付金额');
+  add('rect', {x:margin.left+92, y:12, width:12, height:8, fill:'#b06000'});
+  add('text', {x:margin.left+110, y:20, 'font-size':'12', fill:'#263746'}, '未结算金额');
+  function drawBar(x0, value, width0, color, showLabel) {
+    const y = yVal(value);
+    const top = Math.min(y, zeroY);
+    const h = Math.max(Math.abs(zeroY - y), 1);
+    add('rect', {x:x0, y:top, width:width0, height:h, fill:color, rx:3});
+    if (showLabel && Math.abs(value) > 0) {
+      add('text', {x:x0+width0/2, y:top-6, 'text-anchor':'middle', 'font-size':'9', fill:color}, fmt(value/10000,1)+'万');
+    }
+  }
   return svg;
 }
 

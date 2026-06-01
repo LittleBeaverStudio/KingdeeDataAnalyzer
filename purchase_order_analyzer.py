@@ -46,7 +46,7 @@ class PurchaseOrderAnalyzer:
     def analyze(self, org_name: str = "未知组织", period_str: str = "") -> dict:
         detail = self.df.copy()
         self.result = {
-            "organization": org_name,
+            "organization": self._organization_label(org_name),
             "period": period_str,
             "summary": self._summary(detail),
             "monthly_trend": self._monthly_trend(detail),
@@ -228,6 +228,16 @@ class PurchaseOrderAnalyzer:
             "逾期未收料按交货日期早于报告生成日且未收料数量大于0识别，用于提示交付执行风险。",
             "供应商、物料、采购组织排行默认按未结算金额降序，便于优先关注资金占用与待结算事项。",
         ]
+
+    def _organization_label(self, fallback: str) -> str:
+        orgs = [
+            str(x).strip()
+            for x in self.df.get("purchase_org", pd.Series(dtype=str)).dropna().unique().tolist()
+            if str(x).strip()
+        ]
+        if orgs:
+            return "、".join(sorted(orgs))
+        return fallback or "自动识别组织"
 
     def _numeric_fields(self) -> set[str]:
         return {
