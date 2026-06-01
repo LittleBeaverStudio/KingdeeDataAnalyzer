@@ -165,15 +165,3 @@ KingdeeDataAnalyzer/
   sales_outstock_analyzer.py
   sales_outstock_report_builder.py
 ```
-
-## 发布建议
-
-发布到 GitHub 时建议提交源码、`README.md`、`SKILL.md`、`requirements.txt`。
-
-不建议提交：
-
-- `outputs*/`
-- `__pycache__/`
-- 本地生成的 Excel / HTML / JSON 报告
-
-这些都属于运行产物，用户安装后可自行生成。
