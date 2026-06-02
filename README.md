@@ -1,3 +1,4 @@
+![License](https://img.shields.io/github/license/LittleBeaverStudio/KingdeeDataExporter?label=license)
 # kingdee-data-analyzer
 
 一个基于 `KingdeeDataExporter` 导出数据的金蝶云星空经营分析 Skill。当前支持：
@@ -166,4 +167,4 @@ KingdeeDataAnalyzer/
   purchase_order_report_builder.py
   sales_outstock_analyzer.py
   sales_outstock_report_builder.py
-```
+```> ⚠️ 本工具仅在你自有金蝶环境的授权范围内使用，使用者自行负责凭据保管与数据合规。
