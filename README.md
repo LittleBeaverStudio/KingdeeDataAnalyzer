@@ -1,4 +1,4 @@
-![License](https://img.shields.io/github/license/LittleBeaverStudio/KingdeeDataExporter?label=license)
+![License](https://img.shields.io/github/license/LittleBeaverStudio/KingdeeDataAnalyzer?label=license)
 # kingdee-data-analyzer
 
 一个基于 `KingdeeDataExporter` 导出数据的金蝶云星空经营分析 Skill。当前支持：
@@ -59,6 +59,22 @@ python -m pip install -r requirements.txt
 
 以下命令均在 `KingdeeDataAnalyzer` 目录执行。
 
+### 检查是否有新版本
+
+脚本启动时会自动轻量检查 GitHub 最新 Release；发现新版本时，会在控制台输出更新地址。
+
+也可以单独检查更新，不执行分析：
+
+```bash
+python analyzer.py --check-update
+```
+
+离线环境或不想检查时可关闭：
+
+```bash
+python analyzer.py --no-update-check
+```
+
 ### 库存收发存分析
 
 ```bash
@@ -111,7 +127,7 @@ python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01
 如果不传 `--org`，会交给 `KingdeeDataExporter` 登录后自动解析组织。若要指定组织：
 
 ```bash
-python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01 --org 101
+python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01 --org ORG001
 ```
 
 多个组织或 `all` 是否可用，取决于 `KingdeeDataExporter` 当前配置和金蝶权限。
@@ -123,7 +139,7 @@ python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01 --org 101
 如果数据已经通过 `KingdeeDataExporter` 导出，可以跳过接口调用：
 
 ```bash
-python analyzer.py --type purchase --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org 101
+python analyzer.py --type purchase --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org ORG001
 ```
 
 这种方式适合调试报告版式或复用历史导出数据。

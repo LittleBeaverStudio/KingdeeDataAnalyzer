@@ -11,10 +11,20 @@ Use this skill to turn KingdeeDataExporter output into business analysis reports
 
 Run from the `KingdeeDataAnalyzer` folder.
 
+### Check for updates
+
+The entry script checks the latest GitHub Release on startup and prints an update URL when a newer version is available.
+
+```bash
+python analyzer.py --check-update
+```
+
+Use `--no-update-check` in offline environments.
+
 ### From Kingdee live export
 
 ```bash
-python analyzer.py --type inventory --start 2025-06-01 --end 2026-05-31 --org 101
+python analyzer.py --type inventory --start 2025-06-01 --end 2026-05-31 --org ORG001
 ```
 
 This calls sibling `../KingdeeDataExporter/data_exporter.py` with:
@@ -27,7 +37,7 @@ The generated Excel is saved under `outputs/`, then analyzed.
 ### From an existing Excel export
 
 ```bash
-python analyzer.py --type inventory --excel "path/to/export.xlsx" --start 2025-06-01 --end 2026-05-31 --org 101
+python analyzer.py --type inventory --excel "path/to/export.xlsx" --start 2025-06-01 --end 2026-05-31 --org ORG001
 ```
 
 Use this for debugging or when the data has already been exported.
@@ -57,7 +67,7 @@ Run from the `KingdeeDataAnalyzer` folder.
 ### From Kingdee live export
 
 ```bash
-python analyzer.py --type purchase --start 2026-01-01 --end 2026-06-01 --org 101
+python analyzer.py --type purchase --start 2026-01-01 --end 2026-06-01 --org ORG001
 ```
 
 If `--start` and `--end` are omitted, purchase order analysis defaults to the current year-to-date period.
@@ -69,7 +79,7 @@ This calls sibling `../KingdeeDataExporter/data_exporter.py` with:
 ### From an existing Excel export
 
 ```bash
-python analyzer.py --type purchase --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org 101
+python analyzer.py --type purchase --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org ORG001
 ```
 
 ### Purchase Order Outputs
@@ -93,7 +103,7 @@ Run from the `KingdeeDataAnalyzer` folder.
 ### From Kingdee live export
 
 ```bash
-python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01 --org 101
+python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01 --org ORG001
 ```
 
 If `--start` and `--end` are omitted, sales analysis defaults to the current year-to-date period.
@@ -105,7 +115,7 @@ This calls sibling `../KingdeeDataExporter/data_exporter.py` with:
 ### From an existing Excel export
 
 ```bash
-python analyzer.py --type sales --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org 101
+python analyzer.py --type sales --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org ORG001
 ```
 
 ### Sales Outstock Outputs

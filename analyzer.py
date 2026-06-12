@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import urllib.request
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -12,6 +14,11 @@ from purchase_order_report_builder import PurchaseOrderReportBuilder
 from report_builder import ReportBuilder
 from sales_outstock_analyzer import SalesOutstockAnalyzer
 from sales_outstock_report_builder import SalesOutstockReportBuilder
+
+
+APP_VERSION = "2026-06-12"
+RELEASES_API_URL = "https://api.github.com/repos/LittleBeaverStudio/KingdeeDataAnalyzer/releases/latest"
+RELEASES_PAGE_URL = "https://github.com/LittleBeaverStudio/KingdeeDataAnalyzer/releases/latest"
 
 
 def main() -> int:
@@ -25,7 +32,19 @@ def main() -> int:
     parser.add_argument("--output-dir", default="outputs", help="报告输出目录")
     parser.add_argument("--pdf", action="store_true", help="兼容旧参数：不再直接生成 PDF，请在 HTML 中点击“打印 / 另存为 PDF”")
     parser.add_argument("--open", action="store_true", help="生成后用系统默认浏览器打开 HTML")
+    parser.add_argument("--check-update", action="store_true", help="只检查是否有新版本，不执行分析")
+    parser.add_argument("--no-update-check", action="store_true", help="关闭启动时自动检查更新")
     args = parser.parse_args()
+
+    update_info = None
+    if not args.no_update_check:
+        update_info = check_for_update()
+        print_update_notice(update_info)
+
+    if args.check_update:
+        if not update_info:
+            print(f"当前已是最新版本: {APP_VERSION}")
+        return 0
 
     if args.type == "finance":
         raise SystemExit("当前版本已支持 inventory/purchase/sales；finance 后续扩展。")
@@ -94,6 +113,64 @@ def main() -> int:
     print()
     print(builder.generate_summary_markdown())
     return 0
+
+
+def _version_sort_key(version: str | None) -> list[tuple[int, int | str]]:
+    text = str(version or "").strip().lstrip("vV")
+    parts = re.split(r"[^0-9A-Za-z]+", text)
+    key: list[tuple[int, int | str]] = []
+    for part in parts:
+        if not part:
+            continue
+        if part.isdigit():
+            key.append((0, int(part)))
+        else:
+            key.append((1, part.lower()))
+    return key
+
+
+def is_newer_version(latest_version: str, current_version: str) -> bool:
+    return _version_sort_key(latest_version) > _version_sort_key(current_version)
+
+
+def check_for_update(timeout: int = 3) -> dict[str, str] | None:
+    """检查 GitHub 最新 Release。失败时静默返回 None，不影响分析。"""
+    try:
+        request = urllib.request.Request(
+            RELEASES_API_URL,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": f"KingdeeDataAnalyzer/{APP_VERSION}",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            if response.status != 200:
+                return None
+            data = json.loads(response.read().decode("utf-8"))
+        latest_version = str(data.get("tag_name") or "").strip()
+        if not latest_version:
+            return None
+        release_url = data.get("html_url") or RELEASES_PAGE_URL
+        if is_newer_version(latest_version, APP_VERSION):
+            return {
+                "current_version": APP_VERSION,
+                "latest_version": latest_version,
+                "url": release_url,
+            }
+    except Exception:
+        return None
+    return None
+
+
+def print_update_notice(update_info: dict[str, str] | None) -> None:
+    if not update_info:
+        return
+    print("=" * 60)
+    print("发现 KingdeeDataAnalyzer 新版本")
+    print(f"当前版本: {update_info['current_version']}")
+    print(f"最新版本: {update_info['latest_version']}")
+    print(f"更新地址: {update_info['url']}")
+    print("=" * 60)
 
 
 def _resolve_dates(start: str | None, end: str | None, report_type: str = "inventory") -> tuple[str, str]:
