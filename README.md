@@ -194,18 +194,6 @@ https://github.com/LittleBeaverStudio/KingdeeDataAnalyzer
 请使用 kingdee-data-analyzer，分析这份金蝶 Excel 的采购执行情况，并生成 HTML 和 Excel 报告。
 ```
 
-### ClawHub 特别说明
-
-ClawHub 的网页 GitHub 导入器目前只扫描“登录用户本人拥有”的公开、非 Fork 仓库，不扫描 GitHub Organization 仓库。本仓库属于 `LittleBeaverStudio` Organization，因此不会出现在网页导入列表中，这不是目录结构问题。
-
-可以在仓库根目录直接发布：
-
-```bash
-npx clawhub publish . --slug kingdee-data-analyzer --version 1.0.0
-```
-
-也可以把仓库镜像到当前登录用户本人名下的公开、非 Fork 仓库，再使用 GitHub 导入功能。
-
 ### SkillHub / 其他管理器
 
 能递归扫描 `SKILL.md` 的管理器可以直接识别本仓库。上传 ZIP 时，确认解压后的根目录中包含 `SKILL.md` 和所有 Python 文件。
