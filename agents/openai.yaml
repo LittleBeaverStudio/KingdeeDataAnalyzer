@@ -1,0 +1,4 @@
+interface:
+  display_name: "金蝶云星空经营分析"
+  short_description: "分析金蝶库存、采购和销售数据，生成 HTML 与 Excel 报告"
+  default_prompt: "使用 $kingdee-data-analyzer 分析金蝶导出数据并生成经营分析报告。"

@@ -27,6 +27,7 @@ def main() -> int:
     parser.add_argument("--start", help="开始日期 YYYY-MM-DD")
     parser.add_argument("--end", help="结束日期 YYYY-MM-DD")
     parser.add_argument("--org", help="组织编码")
+    parser.add_argument("--exporter", help="data_exporter.py 路径；未指定时自动查找同级导出 Skill")
     parser.add_argument("--excel", help="直接读取已导出的 Excel 文件，跳过金蝶导出")
     parser.add_argument("--json", help="直接读取 analysis_result.json，重新生成报告")
     parser.add_argument("--output-dir", default="outputs", help="报告输出目录")
@@ -57,7 +58,7 @@ def main() -> int:
         result = json.loads(Path(args.json).read_text(encoding="utf-8"))
     else:
         start, end = _resolve_dates(args.start, args.end, args.type)
-        loader = KingdeeDataLoader()
+        loader = KingdeeDataLoader(args.exporter)
         if args.type == "inventory":
             if args.excel:
                 summary_df, detail_df = loader.load_inventory_from_excel(args.excel)

@@ -1,0 +1,11 @@
+.git/
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+outputs/
+outputs_*/
+*.pyc
+*.xlsx
+*.csv
+

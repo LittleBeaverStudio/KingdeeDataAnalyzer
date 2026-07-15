@@ -1,160 +1,132 @@
 ---
 name: kingdee-data-analyzer
-description: Kingdee Cloud business data analysis skill. Use when Codex needs to analyze data exported by kingdee-data-exporter and generate shareable inventory, purchase order, sales outstock, or finance reports. Current modules are inventory analysis, purchase order execution analysis, and sales outstock invoice tracking analysis, all producing standalone HTML summary reports and full-detail Excel workbooks.
+description: 金蝶云星空经营数据分析技能。用于读取 kingdee-data-exporter 导出的 Excel，或自动调用导出技能获取数据，完成库存收发存、采购订单执行和销售出库开票分析，并生成可分享的 HTML 报告、全量明细 Excel 和结构化 JSON。当用户提到金蝶库存分析、采购执行、逾期未收料、销售出库、开票率、结算率、未结算金额或经营分析报告时使用。
 ---
 
-# Kingdee Data Analyzer
+# 金蝶云星空经营数据分析
 
-Use this skill to turn KingdeeDataExporter output into business analysis reports. Current modules are inventory analysis, purchase order execution analysis, and sales outstock invoice tracking analysis. Financial statement analysis is a reserved extension point.
+使用本技能把金蝶云星空导出数据整理成便于查看和分享的经营分析报告。
 
-## Inventory Analysis Workflow
+## 当前能力
 
-Run from the `KingdeeDataAnalyzer` folder.
+- `inventory`：库存收发存、趋势预测和采购建议
+- `purchase`：采购订单执行、收料/入库/结算情况和逾期未收料
+- `sales`：销售出库、开票、收款结算和未结算金额
 
-### Check for updates
+每次分析生成：
 
-The entry script checks the latest GitHub Release on startup and prints an update URL when a newer version is available.
+- 独立 HTML 报告，可直接打开、分享或打印为 PDF
+- 全量明细 Excel
+- 结构化 JSON，便于后续复用
 
-```bash
-python analyzer.py --check-update
-```
+## 工作原则
 
-Use `--no-update-check` in offline environments.
+1. 先确认用户要分析的类型、期间和组织。
+2. 有现成 Excel 时优先使用 `--excel`，无需连接金蝶或安装导出技能。
+3. 需要实时取数时，使用同级的 `kingdee-data-exporter`。
+4. 不展示无关的业务明细、账号密码或其他敏感信息。
+5. 报告生成后说明完整路径，并核对输出文件是否存在。
 
-### From Kingdee live export
+## 安装依赖
 
-```bash
-python analyzer.py --type inventory --start 2025-06-01 --end 2026-05-31 --org ORG001
-```
-
-This calls sibling `../KingdeeDataExporter/data_exporter.py` with:
-
-- `HS_INOUTSTOCKSUMMARYRPT` / 存货收发存汇总表
-- `HS_NoDimInOutStockDetailRpt` / 存货收发存明细表
-
-The generated Excel is saved under `outputs/`, then analyzed.
-
-### From an existing Excel export
+在技能目录中执行：
 
 ```bash
-python analyzer.py --type inventory --excel "path/to/export.xlsx" --start 2025-06-01 --end 2026-05-31 --org ORG001
+python -m pip install -r requirements.txt
 ```
 
-Use this for debugging or when the data has already been exported.
+实时取数还需要安装并配置 `kingdee-data-exporter`。程序会自动查找以下同级目录：
 
-### Rebuild a report from JSON
+- `kingdee-data-exporter/`
+- `KingdeeDataExporter/`
+
+也可以用 `--exporter` 或环境变量 `KINGDEE_DATA_EXPORTER` 指定 `data_exporter.py` 的完整路径。
+
+## 从实时数据生成报告
+
+库存分析，默认分析上一个完整自然月：
 
 ```bash
-python analyzer.py --json outputs/analysis_result.json
+python analyzer.py --type inventory
 ```
 
-Use this when only the report layout needs to be repeated.
-
-## Outputs
-
-Reports are written to `outputs/` by default:
-
-- `analysis_result.json`: structured analysis result for downstream use.
-- `inventory_report_YYYYMMDD.html`: standalone summary report. It embeds all data, so it can be opened directly or shared without a local web server.
-- `inventory_details_YYYYMMDD.xlsx`: full-detail workbook with monthly trend, doc type breakdown, all material forecasts, all procurement suggestions, summary statistics, and calculation notes.
-
-The HTML report contains a print button, so users can open it in a browser and save as PDF. Direct PDF generation was intentionally removed because browser print output is more faithful to the HTML layout.
-
-## Purchase Order Analysis Workflow
-
-Run from the `KingdeeDataAnalyzer` folder.
-
-### From Kingdee live export
+采购分析，默认分析本年截至今天：
 
 ```bash
-python analyzer.py --type purchase --start 2026-01-01 --end 2026-06-01 --org ORG001
+python analyzer.py --type purchase
 ```
 
-If `--start` and `--end` are omitted, purchase order analysis defaults to the current year-to-date period.
-
-This calls sibling `../KingdeeDataExporter/data_exporter.py` with:
-
-- `PUR_PurchaseOrderDetailRpt` / 采购订单执行明细表
-
-### From an existing Excel export
+销售分析，默认分析本年截至今天：
 
 ```bash
-python analyzer.py --type purchase --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org ORG001
+python analyzer.py --type sales
 ```
 
-### Purchase Order Outputs
+指定期间和组织：
 
-- `purchase_order_analysis_result.json`: structured purchase order analysis result.
-- `purchase_order_report_YYYYMMDD.html`: standalone summary report.
-- `purchase_order_details_YYYYMMDD.xlsx`: full-detail workbook with summary, monthly trend, supplier ranking, material ranking, overdue unreceived lines, full detail, and calculation notes.
+```bash
+python analyzer.py --type sales --start 2026-01-01 --end 2026-06-30 --org ORG001
+```
 
-### Purchase Order Method Notes
+指定导出脚本：
 
-- 未结算金额 = 应付金额 - 已结算金额；小于0时按0计入未结算风险。
+```bash
+python analyzer.py --type purchase --exporter "D:/skills/kingdee-data-exporter/data_exporter.py"
+```
+
+## 从已有 Excel 生成报告
+
+```bash
+python analyzer.py --type inventory --excel "D:/data/金蝶导出.xlsx" --start 2026-01-01 --end 2026-06-30
+```
+
+读取现有 Excel 时不要求 `kingdee-data-exporter` 存在。
+
+## 复用 JSON 重新生成报告
+
+```bash
+python analyzer.py --type inventory --json outputs/analysis_result.json
+```
+
+仅调整报告版式或重新导出时使用，避免重复取数和计算。
+
+## 输出文件
+
+默认写入 `outputs/`：
+
+- 库存：`inventory_report_*.html`、`inventory_details_*.xlsx`、`analysis_result.json`
+- 采购：`purchase_order_report_*.html`、`purchase_order_details_*.xlsx`、`purchase_order_analysis_result.json`
+- 销售：`sales_outstock_report_*.html`、`sales_outstock_details_*.xlsx`、`sales_outstock_analysis_result.json`
+
+使用 `--output-dir` 可以指定输出目录，使用 `--open` 可以生成后打开 HTML。
+
+## 口径说明
+
+### 库存
+
+- 建议采购量 = `未来 3 个月预测 + 安全库存 - 当前库存`，小于 0 时按 0。
+- 有持续消耗的物料会设置预测下限，避免下降趋势直接预测为 0。
+- 建议采购量为 0 时，不标记为“立即采购”。
+
+### 采购
+
+- 未结算金额 = 应付金额 - 已结算金额；风险统计中小于 0 时按 0。
 - 收料率 = 收料数量 / 订货数量。
 - 入库率 = 入库数量 / 订货数量。
 - 结算率 = 已结算金额 / 应付金额。
-- 逾期未收料按交货日期早于报告生成日且未收料数量大于0识别。
+- 交货日期早于报告日且未收料数量大于 0，视为逾期未收料。
 
-## Sales Outstock Analysis Workflow
+### 销售
 
-Run from the `KingdeeDataAnalyzer` folder.
-
-### From Kingdee live export
-
-```bash
-python analyzer.py --type sales --start 2026-01-01 --end 2026-06-01 --org ORG001
-```
-
-If `--start` and `--end` are omitted, sales analysis defaults to the current year-to-date period.
-
-This calls sibling `../KingdeeDataExporter/data_exporter.py` with:
-
-- `SAL_OutStockInvoiceRpt` / 销售出库开票跟踪表
-
-### From an existing Excel export
-
-```bash
-python analyzer.py --type sales --excel "path/to/export.xlsx" --start 2026-01-01 --end 2026-06-01 --org ORG001
-```
-
-### Sales Outstock Outputs
-
-- `sales_outstock_analysis_result.json`: structured sales outstock analysis result.
-- `sales_outstock_report_YYYYMMDD.html`: standalone summary report.
-- `sales_outstock_details_YYYYMMDD.xlsx`: full-detail workbook with summary, monthly trend, bill type, salesperson, material, customer, unsettled details, full detail, and calculation notes.
-
-### Sales Outstock Method Notes
-
-- 未结算金额 = 应收金额 - 收款结算金额；该字段按原始差额保留，可能为负数。
+- 未结算金额 = 应收金额 - 收款结算金额，保留原始差额，可能为负数。
 - 未开票金额 = 应收金额 - 开票金额。
 - 开票率 = 开票金额 / 应收金额。
 - 结算率 = 收款结算金额 / 应收金额。
-- 未结算金额明细按单据编号汇总，一张单据一行；重点统计维度包括单据类型、销售员、物料名称和客户。
+- 未结算明细按单据编号汇总，一张单据一行。
 
-## Inventory Method Notes
+## 结果检查
 
-- Material forecast uses a conservative ensemble: Holt trend 25%, recent 3-month average 55%, and long-term monthly average 20%.
-- If a material still has consumption in the latest 6 months, each future month is floored at 50% of its recent 3-month average. This prevents active materials from being forecast to zero only because the Holt trend is falling.
-- Suggested order quantity is `max(0, next 3 months forecast + safety stock - current stock)`, rounded up to a multiple of 10.
-- Purchase timing is driven by suggested order quantity first. If suggested quantity is 0, the report does not label it as "立即采购"; low-stock/no-demand conflicts are labeled for manual review.
-
-## Module Files
-
-- `data_loader.py`: calls KingdeeDataExporter or reads an existing Excel file.
-- `inventory_analyzer.py`: calculates inventory trends, forecasts, and procurement suggestions.
-- `purchase_order_analyzer.py`: calculates purchase order execution, settlement, and overdue unreceived metrics.
-- `sales_outstock_analyzer.py`: calculates sales outstock, invoice, receipt settlement, unsettled amount, and dimension summaries.
-- `report_builder.py`: creates inventory standalone HTML output and full-detail Excel workbooks.
-- `purchase_order_report_builder.py`: creates purchase order standalone HTML output and full-detail Excel workbooks.
-- `sales_outstock_report_builder.py`: creates sales outstock standalone HTML output and full-detail Excel workbooks.
-- `analyzer.py`: command-line entry point and orchestration.
-
-## Extension Notes
-
-Keep future modules behind a clear `--type` value, such as `finance`. Reuse the same pattern:
-
-1. Load source tables through `data_loader.py`.
-2. Put business calculations in a focused analyzer module.
-3. Return JSON-serializable results.
-4. Generate standalone HTML and full-detail Excel through report builders; use browser print/save-as-PDF for sharing.
+1. 检查 HTML、Excel 和 JSON 是否成功生成。
+2. 抽查报告总额与 Excel 明细汇总是否一致。
+3. 数据为空时核对期间、组织、工作表名称和导出权限。
+4. 需要 PDF 时打开 HTML，使用浏览器“打印 / 另存为 PDF”。

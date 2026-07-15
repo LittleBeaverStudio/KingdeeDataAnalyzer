@@ -28,13 +28,20 @@ class KingdeeDataLoader:
     """Load Kingdee inventory report data from exporter output or an existing Excel file."""
 
     def __init__(self, exporter_path: str | os.PathLike | None = None):
-        if exporter_path:
-            self.exporter_path = Path(exporter_path)
-        else:
-            self.exporter_path = Path(__file__).resolve().parent.parent / "KingdeeDataExporter" / "data_exporter.py"
+        self.exporter_path = self._resolve_exporter_path(exporter_path)
 
-        if not self.exporter_path.exists():
-            raise FileNotFoundError(f"未找到 KingdeeDataExporter 脚本: {self.exporter_path}")
+    @staticmethod
+    def _resolve_exporter_path(exporter_path: str | os.PathLike | None) -> Path:
+        explicit_path = exporter_path or os.environ.get("KINGDEE_DATA_EXPORTER")
+        if explicit_path:
+            return Path(explicit_path).expanduser().resolve()
+
+        skills_dir = Path(__file__).resolve().parent.parent
+        candidates = (
+            skills_dir / "kingdee-data-exporter" / "data_exporter.py",
+            skills_dir / "KingdeeDataExporter" / "data_exporter.py",
+        )
+        return next((path for path in candidates if path.exists()), candidates[0])
 
     def load_inventory(self, start_date: str, end_date: str, org_number: str | None) -> tuple[pd.DataFrame, pd.DataFrame | None, Path]:
         excel_path = self.export_inventory_excel(start_date, end_date, org_number)
@@ -60,6 +67,12 @@ class KingdeeDataLoader:
         return self._export_excel(SALES_OUTSTOCK_INVOICE_FORM, start_date, end_date, org_number, "kingdee_sales_outstock_")
 
     def _export_excel(self, forms: str, start_date: str, end_date: str, org_number: str | None, temp_prefix: str) -> Path:
+        if not self.exporter_path.exists():
+            raise FileNotFoundError(
+                "未找到 kingdee-data-exporter 的 data_exporter.py。"
+                "请安装导出 Skill，或使用 --exporter / KINGDEE_DATA_EXPORTER 指定脚本路径。"
+            )
+
         with tempfile.TemporaryDirectory(prefix=temp_prefix) as tmp_dir:
             tmp_path = Path(tmp_dir)
             before = set(tmp_path.glob("*.xlsx"))
