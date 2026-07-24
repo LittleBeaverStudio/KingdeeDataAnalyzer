@@ -16,7 +16,7 @@ from sales_outstock_analyzer import SalesOutstockAnalyzer
 from sales_outstock_report_builder import SalesOutstockReportBuilder
 
 
-APP_VERSION = "2026-06-12"
+APP_VERSION = "2026-07-24"
 RELEASES_API_URL = "https://api.github.com/repos/LittleBeaverStudio/KingdeeDataAnalyzer/releases/latest"
 RELEASES_PAGE_URL = "https://github.com/LittleBeaverStudio/KingdeeDataAnalyzer/releases/latest"
 
@@ -28,23 +28,24 @@ def main() -> int:
     parser.add_argument("--end", help="结束日期 YYYY-MM-DD")
     parser.add_argument("--org", help="组织编码")
     parser.add_argument("--exporter", help="data_exporter.py 路径；未指定时自动查找同级导出 Skill")
+    parser.add_argument("--export-timeout", type=int, default=3600, help="实时导出的最长等待秒数，默认 3600")
     parser.add_argument("--excel", help="直接读取已导出的 Excel 文件，跳过金蝶导出")
     parser.add_argument("--json", help="直接读取 analysis_result.json，重新生成报告")
     parser.add_argument("--output-dir", default="outputs", help="报告输出目录")
     parser.add_argument("--pdf", action="store_true", help="兼容旧参数：不再直接生成 PDF，请在 HTML 中点击“打印 / 另存为 PDF”")
     parser.add_argument("--open", action="store_true", help="生成后用系统默认浏览器打开 HTML")
-    parser.add_argument("--check-update", action="store_true", help="只检查是否有新版本，不执行分析")
-    parser.add_argument("--no-update-check", action="store_true", help="关闭启动时自动检查更新")
+    parser.add_argument("--check-update", action="store_true", help="检查是否有新版本（仅此选项会访问 GitHub），不执行分析")
     args = parser.parse_args()
 
-    update_info = None
-    if not args.no_update_check:
-        update_info = check_for_update()
-        print_update_notice(update_info)
+    if args.export_timeout <= 0:
+        parser.error("--export-timeout 必须大于 0")
 
     if args.check_update:
-        if not update_info:
-            print(f"当前已是最新版本: {APP_VERSION}")
+        update_info = check_for_update()
+        if update_info:
+            print_update_notice(update_info)
+        else:
+            print(f"未发现新版本（当前版本: {APP_VERSION}；网络不可用时也会得到此结果）")
         return 0
 
     if args.type == "finance":
@@ -58,7 +59,7 @@ def main() -> int:
         result = json.loads(Path(args.json).read_text(encoding="utf-8"))
     else:
         start, end = _resolve_dates(args.start, args.end, args.type)
-        loader = KingdeeDataLoader(args.exporter)
+        loader = KingdeeDataLoader(args.exporter, export_timeout=args.export_timeout)
         if args.type == "inventory":
             if args.excel:
                 summary_df, detail_df = loader.load_inventory_from_excel(args.excel)

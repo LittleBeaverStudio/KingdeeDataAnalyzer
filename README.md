@@ -87,7 +87,7 @@ skills/
 python analyzer.py --type inventory --exporter "D:/skills/kingdee-data-exporter/data_exporter.py"
 ```
 
-也可以设置环境变量 `KINGDEE_DATA_EXPORTER`。
+Analyzer 会直接复用 Exporter 目录里的 `config.py`，无需维护第二份金蝶配置。显式指定路径时，程序会核验脚本文件名和对应 `SKILL.md`，避免误执行其他脚本。
 
 ### 常用命令
 
@@ -203,8 +203,8 @@ https://github.com/LittleBeaverStudio/KingdeeDataAnalyzer
 ### 提示找不到 `data_exporter.py`
 
 - 安装 `kingdee-data-exporter`；或
-- 用 `--exporter` 指定路径；或
-- 设置环境变量 `KINGDEE_DATA_EXPORTER`。
+- 将两个 Skill 放在同一父目录；或
+- 用 `--exporter` 指定路径。
 
 ### 已经有 Excel，为什么还要导出器
 
@@ -223,5 +223,7 @@ python analyzer.py --type inventory --json outputs/analysis_result.json
 ```bash
 python analyzer.py --check-update
 ```
+
+仅该命令会访问 GitHub Releases API。本地 Excel/JSON 分析不联网；实时取数会连接你配置的金蝶服务器。
 
 > 本工具仅用于你有权访问的数据。请妥善保管金蝶凭据和导出的经营数据。

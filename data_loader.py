@@ -27,21 +27,42 @@ SHEET_NAME_MAP = {
 class KingdeeDataLoader:
     """Load Kingdee inventory report data from exporter output or an existing Excel file."""
 
-    def __init__(self, exporter_path: str | os.PathLike | None = None):
+    def __init__(self, exporter_path: str | os.PathLike | None = None, export_timeout: int = 3600):
         self.exporter_path = self._resolve_exporter_path(exporter_path)
+        self.export_timeout = export_timeout
 
     @staticmethod
     def _resolve_exporter_path(exporter_path: str | os.PathLike | None) -> Path:
-        explicit_path = exporter_path or os.environ.get("KINGDEE_DATA_EXPORTER")
-        if explicit_path:
-            return Path(explicit_path).expanduser().resolve()
+        if exporter_path:
+            path = Path(exporter_path).expanduser().resolve()
+            KingdeeDataLoader._validate_exporter_path(path)
+            return path
 
         skills_dir = Path(__file__).resolve().parent.parent
         candidates = (
             skills_dir / "kingdee-data-exporter" / "data_exporter.py",
             skills_dir / "KingdeeDataExporter" / "data_exporter.py",
         )
-        return next((path for path in candidates if path.exists()), candidates[0])
+        path = next((path for path in candidates if path.exists()), candidates[0])
+        if path.exists():
+            KingdeeDataLoader._validate_exporter_path(path)
+        return path
+
+    @staticmethod
+    def _validate_exporter_path(path: Path) -> None:
+        if not path.is_file() or path.name != "data_exporter.py":
+            raise ValueError("--exporter 必须指向 kingdee-data-exporter 的 data_exporter.py 文件。")
+
+        skill_file = path.parent / "SKILL.md"
+        if not skill_file.is_file():
+            raise ValueError("导出脚本目录缺少 SKILL.md，无法确认它是 kingdee-data-exporter。")
+
+        try:
+            skill_text = skill_file.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ValueError(f"无法读取导出 Skill 身份信息：{skill_file}") from exc
+        if not re.search(r"(?mi)^name:\s*kingdee-data-exporter\s*$", skill_text):
+            raise ValueError("SKILL.md 的 name 不是 kingdee-data-exporter，已拒绝执行该脚本。")
 
     def load_inventory(self, start_date: str, end_date: str, org_number: str | None) -> tuple[pd.DataFrame, pd.DataFrame | None, Path]:
         excel_path = self.export_inventory_excel(start_date, end_date, org_number)
@@ -70,8 +91,9 @@ class KingdeeDataLoader:
         if not self.exporter_path.exists():
             raise FileNotFoundError(
                 "未找到 kingdee-data-exporter 的 data_exporter.py。"
-                "请安装导出 Skill，或使用 --exporter / KINGDEE_DATA_EXPORTER 指定脚本路径。"
+                "请将两个 Skill 放在同一目录，或使用 --exporter 指定脚本路径。"
             )
+        self._validate_exporter_path(self.exporter_path)
 
         with tempfile.TemporaryDirectory(prefix=temp_prefix) as tmp_dir:
             tmp_path = Path(tmp_dir)
@@ -85,19 +107,30 @@ class KingdeeDataLoader:
                 end_date,
                 "--only",
                 forms,
-                "--no-wechat",
+                "--output-dir",
+                str(tmp_path),
             ]
             if org_number:
                 cmd[cmd.index("--only"):cmd.index("--only")] = ["--org", str(org_number)]
 
-            result = subprocess.run(
-                cmd,
-                cwd=tmp_path,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
+            print(f"正在调用金蝶数据导出脚本：{self.exporter_path}")
+            print(f"  导出内容：{forms}")
+            print(f"  期间：{start_date} ~ {end_date}" + (f"，组织：{org_number}" if org_number else ""))
+            try:
+                result = subprocess.run(
+                    cmd,
+                    cwd=self.exporter_path.parent,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=self.export_timeout,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise TimeoutError(
+                    f"金蝶数据导出超过 {self.export_timeout} 秒，已停止等待。"
+                    "可通过 --export-timeout 调整超时时间。"
+                ) from exc
             if result.returncode != 0:
                 raise RuntimeError("金蝶数据导出失败:\n" + (result.stderr or result.stdout))
 
@@ -111,6 +144,7 @@ class KingdeeDataLoader:
             if target.exists():
                 target = output_dir / f"{exported.stem}_{os.getpid()}{exported.suffix}"
             shutil.move(str(exported), str(target))
+            print(f"  导出文件已保存：{target}")
             return target
 
     def load_inventory_from_excel(self, excel_path: str | os.PathLike) -> tuple[pd.DataFrame, pd.DataFrame | None]:

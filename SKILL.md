@@ -1,6 +1,6 @@
 ---
 name: kingdee-data-analyzer
-description: 金蝶云星空经营数据分析技能。用于读取 kingdee-data-exporter 导出的 Excel，或自动调用导出技能获取数据，完成库存收发存、采购订单执行和销售出库开票分析，并生成可分享的 HTML 报告、全量明细 Excel 和结构化 JSON。当用户提到金蝶库存分析、采购执行、逾期未收料、销售出库、开票率、结算率、未结算金额或经营分析报告时使用。
+description: 金蝶云星空经营数据分析技能。仅当用户明确要求分析金蝶云星空或 K3 Cloud 的库存、采购订单、销售出库、开票、结算等经营数据时使用；可读取 kingdee-data-exporter 导出的 Excel，也可自动调用同级导出技能实时取数，并生成 HTML 报告、全量明细 Excel 和结构化 JSON。
 ---
 
 # 金蝶云星空经营数据分析
@@ -27,6 +27,17 @@ description: 金蝶云星空经营数据分析技能。用于读取 kingdee-data
 4. 不展示无关的业务明细、账号密码或其他敏感信息。
 5. 报告生成后说明完整路径，并核对输出文件是否存在。
 
+## 权限与行为声明
+
+运行本技能前请知悉其能力范围：
+
+- **本地文件读写**：读取输入的 Excel/JSON；在 `outputs/` 写入 HTML 报告、明细 Excel 和分析 JSON。
+- **子进程执行**：实时取数时以子进程调用同级或 `--exporter` 指定的 `kingdee-data-exporter/data_exporter.py`。执行前会核验文件名和 `SKILL.md` 身份，并打印脚本路径与导出参数；默认等待上限为 3600 秒。
+- **配置复用**：实时取数直接使用导出技能目录中的 `config.py`，不要求在分析技能中重复配置账号。
+- **网络访问**：读取本地 Excel/JSON 时不访问网络；实时取数时由导出技能连接用户配置的金蝶服务器；仅显式传入 `--check-update` 时访问 GitHub Releases API。
+- **打开浏览器**：仅显式传入 `--open` 时用系统默认浏览器打开生成的 HTML。
+- 所有分析在本地完成，不上传任何业务数据。
+
 ## 安装依赖
 
 在技能目录中执行：
@@ -40,7 +51,7 @@ python -m pip install -r requirements.txt
 - `kingdee-data-exporter/`
 - `KingdeeDataExporter/`
 
-也可以用 `--exporter` 或环境变量 `KINGDEE_DATA_EXPORTER` 指定 `data_exporter.py` 的完整路径。
+安装位置不同时，也可以用 `--exporter` 指定 `data_exporter.py` 的完整路径。程序会核验它确实属于 `kingdee-data-exporter`。
 
 ## 从实时数据生成报告
 
@@ -89,6 +100,14 @@ python analyzer.py --type inventory --json outputs/analysis_result.json
 ```
 
 仅调整报告版式或重新导出时使用，避免重复取数和计算。
+
+## 检查新版本
+
+```bash
+python analyzer.py --check-update
+```
+
+仅该命令会访问 GitHub Releases API。本地文件分析不联网；实时取数只连接已配置的金蝶服务器。
 
 ## 输出文件
 
