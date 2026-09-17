@@ -9,3 +9,8 @@ outputs_*/
 *.xlsx
 *.csv
 
+
+# 内部工作稿与智能体记忆（禁止外发）
+.history/
+_*.py
+.workbuddy/

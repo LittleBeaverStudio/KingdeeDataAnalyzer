@@ -23,6 +23,29 @@ SHEET_NAME_MAP = {
     SALES_OUTSTOCK_INVOICE_FORM: "销售出库开票跟踪表",
 }
 
+# 实时取数时缺少导出技能 / 未配置时的引导。
+# 只读的 --excel 模式不需要这些依赖，所以不要用强制安装的方式打扰用户。
+EXPORTER_SETUP_HINT = """本技能实时取数需要先装好并配置「金蝶云星空数据导出」技能（kingdee-data-exporter）：
+
+  1) 安装（任选一种）
+     · SkillHub 里搜索 kingdee-data-exporter 安装（推荐，平台已处理好目录结构）；
+     · 从 GitHub 拉取（需联网，请先征得用户同意）：
+         在存放本技能的父目录执行
+         curl -L -o kd.zip https://github.com/LittleBeaverStudio/KingdeeDataExporter/archive/refs/heads/master.zip
+         解压后把 KingdeeDataExporter-master 重命名为 kingdee-data-exporter
+       解压后的目录里必须能看到 SKILL.md，本技能靠它核对身份。
+  2) 配置（推荐，技能升级不会覆盖）
+     写 ~/.workbuddy/kingdee/config.json：
+       {"base_url": "https://你的域名/k3cloud/", "acct_name": "账套名称",
+        "username": "取数账号", "password": "密码"}
+     账套 ID 不用自己找——只填 acct_name 会自动解析；也可用 KINGDEE_* 环境变量。
+  3) 自检：python data_exporter.py --doctor
+     （不确定账套名时先跑 --list-datacenters，它免账号密码）
+
+配置完成后本技能会自动发现它；位置特殊时用 --exporter 指定 data_exporter.py 的完整路径。
+※ 只分析已有 Excel 时（--excel）不需要上述任何依赖。
+"""
+
 
 class KingdeeDataLoader:
     """Load Kingdee inventory report data from exporter output or an existing Excel file."""
@@ -90,8 +113,8 @@ class KingdeeDataLoader:
     def _export_excel(self, forms: str, start_date: str, end_date: str, org_number: str | None, temp_prefix: str) -> Path:
         if not self.exporter_path.exists():
             raise FileNotFoundError(
-                "未找到 kingdee-data-exporter 的 data_exporter.py。"
-                "请将两个 Skill 放在同一目录，或使用 --exporter 指定脚本路径。"
+                f"未找到 kingdee-data-exporter 的 data_exporter.py（查找位置：{self.exporter_path}）。\n\n"
+                + EXPORTER_SETUP_HINT
             )
         self._validate_exporter_path(self.exporter_path)
 
@@ -132,7 +155,16 @@ class KingdeeDataLoader:
                     "可通过 --export-timeout 调整超时时间。"
                 ) from exc
             if result.returncode != 0:
-                raise RuntimeError("金蝶数据导出失败:\n" + (result.stderr or result.stdout))
+                exported_output = (result.stdout or result.stderr or "").strip()
+                message = "金蝶数据导出失败:\n" + exported_output
+                if "未检测到可用的金蝶连接配置" in exported_output or "缺少金蝶连接配置" in exported_output:
+                    message += "\n\n" + EXPORTER_SETUP_HINT
+                else:
+                    message += (
+                        "\n\n排障建议：在导出技能目录执行 `python data_exporter.py --doctor`，"
+                        "它会逐步定位是配置、网络、账套、登录还是权限问题。"
+                    )
+                raise RuntimeError(message)
 
             exported = self._find_exported_excel(tmp_path, result.stdout, before)
             if not exported:

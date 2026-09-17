@@ -16,7 +16,7 @@ from sales_outstock_analyzer import SalesOutstockAnalyzer
 from sales_outstock_report_builder import SalesOutstockReportBuilder
 
 
-APP_VERSION = "2026-07-24"
+APP_VERSION = "2026-09-17"
 RELEASES_API_URL = "https://api.github.com/repos/LittleBeaverStudio/KingdeeDataAnalyzer/releases/latest"
 RELEASES_PAGE_URL = "https://github.com/LittleBeaverStudio/KingdeeDataAnalyzer/releases/latest"
 

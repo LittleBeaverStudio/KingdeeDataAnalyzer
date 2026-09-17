@@ -1,5 +1,8 @@
 ---
 name: kingdee-data-analyzer
+slug: kingdee-data-analyzer
+displayName: 金蝶云星空经营分析
+version: 1.2.0
 description: 金蝶云星空经营数据分析技能。仅当用户明确要求分析金蝶云星空或 K3 Cloud 的库存、采购订单、销售出库、开票、结算等经营数据时使用；可读取 kingdee-data-exporter 导出的 Excel，也可自动调用同级导出技能实时取数，并生成 HTML 报告、全量明细 Excel 和结构化 JSON。
 license: 小河狸非转售许可 1.0（企业内部使用免费，转售收费需授权）
 ---
@@ -68,6 +71,27 @@ python -m pip install -r requirements.txt
 - `KingdeeDataExporter/`
 
 安装位置不同时，也可以用 `--exporter` 指定 `data_exporter.py` 的完整路径。程序会核验它确实属于 `kingdee-data-exporter`。
+
+### 实时取数前的前置检查（务必先做，别等报错）
+
+只在**实时取数**（不带 `--excel`）时需要。用 `--excel` 分析本地文件时不检查、不打扰用户。
+
+1. **检查导出技能是否已安装**：确认同级目录下存在 `kingdee-data-exporter/data_exporter.py`（或 `KingdeeDataExporter/data_exporter.py`）。
+2. **检查是否已配置**：确认存在 `~/.workbuddy/kingdee/config.json`，或环境变量 `KINGDEE_BASE_URL` + `KINGDEE_USERNAME` + `KINGDEE_PASSWORD`，
+   或导出技能目录里有 `config.py`。三者有其一即可。
+3. **缺任一项时，先告知用户，再按用户意愿处理** —— 不要静默失败，也不要自行在后台联网下载：
+   - 先把缺什么、装完能得到什么讲清楚，并给出安装与配置步骤；
+   - **用户同意后**，可协助安装（推荐让用户在 SkillHub 直接装 `kingdee-data-exporter`；
+     或联网拉取后放到本技能同级目录并确认目录内含 `SKILL.md`）：
+     ```bash
+     cd <存放本技能的父目录>
+     curl -L -o kd.zip https://github.com/LittleBeaverStudio/KingdeeDataExporter/archive/refs/heads/master.zip
+     # 解压后把 KingdeeDataExporter-master 重命名为 kingdee-data-exporter
+     ```
+   - 用户不想装时，退化为 `--excel` 模式：让用户先把 Excel 导出来。
+4. **配置引导**：只填账套名称即可（`acct_name`，acctid 会自动解析）。配完让用户跑一次
+   `python data_exporter.py --doctor`，它会逐步定位是配置、网络、账套、登录还是权限问题。
+   ⚠️ 提醒用户：密码连续错约 5 次会锁账号，不要反复重试。
 
 ## 从实时数据生成报告
 
