@@ -77,8 +77,11 @@ python -m pip install -r requirements.txt
 只在**实时取数**（不带 `--excel`）时需要。用 `--excel` 分析本地文件时不检查、不打扰用户。
 
 1. **检查导出技能是否已安装**：确认同级目录下存在 `kingdee-data-exporter/data_exporter.py`（或 `KingdeeDataExporter/data_exporter.py`）。
-2. **检查是否已配置**：确认存在 `~/.workbuddy/kingdee/config.json`，或环境变量 `KINGDEE_BASE_URL` + `KINGDEE_USERNAME` + `KINGDEE_PASSWORD`，
-   或导出技能目录里有 `config.py`。三者有其一即可。
+2. **检查是否已配置**：四者有其一即可 ——
+   ① 系统加密凭据 `~/.workbuddy/kingdee/credentials.bin`（**推荐**，明文不落盘）；
+   ② 环境变量 `KINGDEE_BASE_URL` + `KINGDEE_USERNAME` + `KINGDEE_PASSWORD`；
+   ③ 旧版明文 `~/.workbuddy/kingdee/config.json`；
+   ④ 导出技能目录里有 `config.py`。
 3. **缺任一项时，先告知用户，再按用户意愿处理** —— 不要静默失败，也不要自行在后台联网下载：
    - 先把缺什么、装完能得到什么讲清楚，并给出安装与配置步骤；
    - **用户同意后**，可协助安装（推荐让用户在 SkillHub 直接装 `kingdee-data-exporter`；
@@ -89,9 +92,16 @@ python -m pip install -r requirements.txt
      # 解压后把 KingdeeDataExporter-master 重命名为 kingdee-data-exporter
      ```
    - 用户不想装时，退化为 `--excel` 模式：让用户先把 Excel 导出来。
-4. **配置引导**：只填账套名称即可（`acct_name`，acctid 会自动解析）。配完让用户跑一次
-   `python data_exporter.py --doctor`，它会逐步定位是配置、网络、账套、登录还是权限问题。
+4. **配置引导**：推荐让用户跑**配置向导**（弹窗填写，**不经对话、不落明文**）：
+   ```bash
+   python setup_credentials.py
+   ```
+   只填 3 项：**公司名（账套名称）、用户名、密码**，acctid 会自动解析。
+   ⛔ **不要要求用户在对话里把密码发给你** —— 让他自己在弹窗里填。
+   ⛔ **不要代替用户把凭据写进明文文件**。
+   配完让用户跑一次 `python data_exporter.py --doctor`，它会逐步定位是配置、网络、账套、登录还是权限问题。
    ⚠️ 提醒用户：密码连续错约 5 次会锁账号，不要反复重试。
+   若检测到旧版明文 `config.json`（含密码），提示用户跑向导迁移并**到金蝶后台改一次密码**。
 
 ## 从实时数据生成报告
 
