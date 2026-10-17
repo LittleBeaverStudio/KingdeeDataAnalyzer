@@ -2,7 +2,7 @@
 name: kingdee-data-analyzer
 slug: kingdee-data-analyzer
 displayName: 金蝶云星空经营分析
-version: 1.3.0
+version: 1.3.1
 description: 金蝶云星空经营数据分析技能。仅当用户明确要求分析金蝶云星空或 K3 Cloud 的库存、采购订单、销售出库、开票、结算等经营数据时使用；可读取 kingdee-data-exporter 导出的 Excel，也可自动调用同级导出技能实时取数，并生成 HTML 报告、全量明细 Excel 和结构化 JSON。
 license: 小河狸非转售许可 1.0（企业内部使用免费，转售收费需授权）
 ---
@@ -92,14 +92,17 @@ python -m pip install -r requirements.txt
      # 解压后把 KingdeeDataExporter-master 重命名为 kingdee-data-exporter
      ```
    - 用户不想装时，退化为 `--excel` 模式：让用户先把 Excel 导出来。
-4. **配置引导**：推荐让用户跑**配置向导**（弹窗填写，**不经对话、不落明文**）：
+4. **配置引导：统一由导出技能负责，本技能不自带配置向导**
+   （凭据单点：一套配置、一处维护。本技能里重复放向导，既与底座重叠，也容易让平台误判"需配 API Key"。）
+   让用户到**导出技能目录**运行：
    ```bash
-   python setup_credentials.py
+   cd <kingdee-data-exporter 目录>
+   python setup_credentials.py        # 弹窗填写，不经对话、不落明文
+   python data_exporter.py --doctor   # 配完自检：配置/连通/账套/登录/取数冒烟
    ```
-   只填 3 项：**公司名（账套名称）、用户名、密码**，acctid 会自动解析。
+   向导只填 3 项：**公司名（账套名称）、用户名、密码**，acctid 自动解析。
    ⛔ **不要要求用户在对话里把密码发给你** —— 让他自己在弹窗里填。
    ⛔ **不要代替用户把凭据写进明文文件**。
-   配完让用户跑一次 `python data_exporter.py --doctor`，它会逐步定位是配置、网络、账套、登录还是权限问题。
    ⚠️ 提醒用户：密码连续错约 5 次会锁账号，不要反复重试。
    若检测到旧版明文 `config.json`（含密码），提示用户跑向导迁移并**到金蝶后台改一次密码**。
 

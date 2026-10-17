@@ -34,11 +34,13 @@ EXPORTER_SETUP_HINT = """本技能实时取数需要先装好并配置「金蝶�
          curl -L -o kd.zip https://github.com/LittleBeaverStudio/KingdeeDataExporter/archive/refs/heads/master.zip
          解压后把 KingdeeDataExporter-master 重命名为 kingdee-data-exporter
        解压后的目录里必须能看到 SKILL.md，本技能靠它核对身份。
-  2) 配置（推荐，技能升级不会覆盖）
-     写 ~/.workbuddy/kingdee/config.json：
-       {"base_url": "https://你的域名/k3cloud/", "acct_name": "账套名称",
-        "username": "取数账号", "password": "密码"}
-     账套 ID 不用自己找——只填 acct_name 会自动解析；也可用 KINGDEE_* 环境变量。
+  2) 配置（推荐：在导出技能目录弹窗填写，明文不落盘）
+       cd <kingdee-data-exporter 目录>
+       python setup_credentials.py         # 只填 公司名（账套名称）/ 用户名 / 密码
+     账套 ID 不用自己找——只填 acct_name 会自动解析；
+     也可用 KINGDEE_BASE_URL / KINGDEE_ACCT_NAME / KINGDEE_USERNAME / KINGDEE_PASSWORD
+     环境变量（适合 CI / 无人值守，但本机并不保密）。
+     ⚠️ 不要再手写含密码的 config.json —— 底座检测到明文配置会直接拒绝取数并引导迁移。
   3) 自检：python data_exporter.py --doctor
      （不确定账套名时先跑 --list-datacenters，它免账号密码）
 
@@ -188,8 +190,12 @@ class KingdeeDataLoader:
         summary_df = self._pick_sheet(sheets, INVENTORY_SUMMARY_FORM)
         detail_df = self._pick_sheet(sheets, INVENTORY_DETAIL_FORM, required=False)
 
-        if summary_df is None or summary_df.empty:
-            raise ValueError(f"Excel 中未找到有效的 {SHEET_NAME_MAP[INVENTORY_SUMMARY_FORM]} 数据。")
+        if summary_df.empty:
+            # 表存在但没有行，不是"导出失败"也不是"找错表"，否则用户会去反复重导
+            raise ValueError(
+                f"工作表「{SHEET_NAME_MAP[INVENTORY_SUMMARY_FORM]}」存在，但该期间没有数据（0 行）。"
+                "请确认期间与组织是否正确，或换一个期间重试。"
+            )
 
         return self._clean_dataframe(summary_df), self._clean_dataframe(detail_df) if detail_df is not None else None
 
@@ -202,9 +208,14 @@ class KingdeeDataLoader:
         df = self._pick_sheet(sheets, PURCHASE_ORDER_DETAIL_FORM, required=False)
         if df is None:
             df = self._pick_purchase_sheet(sheets)
-        if df is None or df.empty:
+        if df is None:
             available = ", ".join(sheets.keys())
-            raise ValueError(f"Excel 中未找到有效的采购订单执行明细表。可用工作表: {available}")
+            raise ValueError(f"Excel 中未找到「采购订单执行明细表」工作表。可用工作表: {available}")
+        if df.empty:
+            raise ValueError(
+                "工作表「采购订单执行明细表」存在，但该期间没有数据（0 行）。"
+                "请确认期间与组织是否正确，或换一个期间重试。"
+            )
         return self._clean_dataframe(df)
 
     def load_sales_outstock_from_excel(self, excel_path: str | os.PathLike) -> pd.DataFrame:
@@ -220,9 +231,14 @@ class KingdeeDataLoader:
                 aliases=("销售出库开票跟踪", "销售出库明细", "OutStockInvoice", "SAL_OutStockInvoiceRpt"),
                 field_keys=("应收金额", "结算金额", "FRECAMOUNT", "FRECEIPTAMOUNT"),
             )
-        if df is None or df.empty:
+        if df is None:
             available = ", ".join(sheets.keys())
-            raise ValueError(f"Excel 中未找到有效的销售出库开票跟踪表。可用工作表: {available}")
+            raise ValueError(f"Excel 中未找到「销售出库开票跟踪表」工作表。可用工作表: {available}")
+        if df.empty:
+            raise ValueError(
+                "工作表「销售出库开票跟踪表」存在，但该期间没有数据（0 行）。"
+                "请确认期间与组织是否正确，或换一个期间重试。"
+            )
         return self._clean_dataframe(df)
 
     def _pick_sheet(self, sheets: dict[str, pd.DataFrame], form_id: str, required: bool = True) -> pd.DataFrame | None:
