@@ -2,7 +2,7 @@
 name: kingdee-data-analyzer
 slug: kingdee-data-analyzer
 displayName: 金蝶云星空经营分析
-version: 1.3.2
+version: 1.4.0
 description: 金蝶云星空经营数据分析技能。仅当用户明确要求分析金蝶云星空或 K3 Cloud 的库存、采购订单、销售出库、开票、结算等经营数据时使用；可读取 kingdee-data-exporter 导出的 Excel，也可自动调用同级导出技能实时取数，并生成 HTML 报告、全量明细 Excel 和结构化 JSON。
 license: 小河狸非转售许可 1.0（企业内部使用免费，转售收费需授权）
 ---
@@ -131,6 +131,14 @@ python analyzer.py --type sales
 ```bash
 python analyzer.py --type sales --start 2026-01-01 --end 2026-06-30 --org ORG001
 ```
+
+复用 exporter 已保存的查询模板（只取其中的组织与期间，导出内容仍由 `--type` 决定）：
+
+```bash
+python analyzer.py --type sales --query 月结销售出库
+```
+
+模板由 `kingdee-data-exporter` 的 `--save-query` 生成，存于 `~/.workbuddy/kingdee/queries.json`，只含组织/期间/单据等取数组合、不含凭据。
 
 指定导出脚本：
 
